@@ -17,7 +17,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
     public class ProductsIntegrationsTests
     {
         
-        public void SetupDatabase()
+        public P3Referential SetupDatabase()
         {
             //Act
             var options = new DbContextOptionsBuilder<P3Referential>()
@@ -33,20 +33,16 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             
             var _context = new P3Referential(builder.Options);
             _context.Database.Migrate();
+            return _context;
         }
 
         [Fact]
         public void Test_Return_All_Products()
         {
-            
-            var serviceProvider = new ServiceCollection()
-                                    .AddEntityFrameworkSqlServer()
-                                    .BuildServiceProvider();
-            var builder = new DbContextOptionsBuilder<P3Referential>();
-            builder.UseSqlServer($"Server=(localdb)\\mssqllocaldb;Database=P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a;Trusted_Connection=True;MultipleActiveResultSets=true")
-                    .UseInternalServiceProvider(serviceProvider);
 
-            var _context = new P3Referential(builder.Options);
+            var _context = SetupDatabase();
+
+            //var _context = new P3Referential(builder.Options);
             //Arrange
             var productService = new ProductRepository(_context);
             var results = productService.GetAllProducts();
@@ -57,40 +53,45 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         [Fact]
         public void Test_Add_Products_In_Database()
         {
-            var serviceProvider = new ServiceCollection()
-                                    .AddEntityFrameworkSqlServer()
-                                    .BuildServiceProvider();
-            var builder = new DbContextOptionsBuilder<P3Referential>();
-            builder.UseSqlServer($"Server=(localdb)\\mssqllocaldb;Database=P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a;Trusted_Connection=True;MultipleActiveResultSets=true")
-                    .UseInternalServiceProvider(serviceProvider);
-
-           var  _context = new P3Referential(builder.Options);
-            _context.Database.Migrate();
-
-            _context = new P3Referential(builder.Options);
-            var product = new Product { Name = "Playstation 4" };
+            var _context = SetupDatabase();
+             var product = new Product 
+             { 
+                 Name = "Playstation 4",
+                 Description = "Playstation 4 has a great catalog of games",
+                 Details = "Playstation 4 has could be played online",
+                 Price = 499.0,
+                 Quantity = 10
+             };
             var productService = new ProductRepository(_context);
-            productService.SaveProduct(product);
-            
+            productService.SaveProduct(product);            
         }
 
         [Fact]
         public void Test_Delete_Products_In_Database()
         {
-            
             //Arrange
-
-            //var productService = new ProductService(_productService.Object, _languageService.Object);
+            var _context = SetupDatabase();
+            var productService = new ProductRepository(_context);
+            var Products = productService.GetAllProducts().ToList();
+            
+            foreach (var item in Products)
+            {
+                productService.DeleteProduct(item.Id);
+            }
             //Assert
-            //productService;
+            var Results = productService.GetAllProducts().ToList();
+            Assert.Empty(Results);
         }
 
-        
+        [Fact]
+        public void Test_Product_Controller()
+        {
+
+        }
+
         public void CleanupDatabase()
         {
             //clean all data 
         }
-    }
-
-    
+    }    
 }

@@ -14,47 +14,130 @@ using P3AddNewFunctionalityDotNetCore.Models.Entities;
 
 namespace P3AddNewFunctionalityDotNetCore.Tests
 {
-    public class ProductsIntegrationsTests
+    public class ConnectionFactory : IDisposable
     {
-        
-        public P3Referential SetupDatabase()
-        {
-            //Act
-            var options = new DbContextOptionsBuilder<P3Referential>()
-            .UseInMemoryDatabase(databaseName: "P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a")
-            .Options;
 
+        #region IDisposable Support  
+        private bool disposedValue = false; // To detect redundant calls  
+
+        public P3Referential CreateContextForInMemory()
+        {
+            var option = new DbContextOptionsBuilder<P3Referential>()
+                        .UseInMemoryDatabase(databaseName: "P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a")
+                        .Options;
+
+            var context = new P3Referential(option);
+            if (context != null)
+            {
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+            }
+
+            return context;
+        }
+
+        public P3Referential CreateContextSQLServer()
+        {
             var serviceProvider = new ServiceCollection()
                                     .AddEntityFrameworkSqlServer()
                                     .BuildServiceProvider();
             var builder = new DbContextOptionsBuilder<P3Referential>();
             builder.UseSqlServer($"Server=(localdb)\\mssqllocaldb;Database=P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a;Trusted_Connection=True;MultipleActiveResultSets=true")
                     .UseInternalServiceProvider(serviceProvider);
-            
-            var _context = new P3Referential(builder.Options);
-            _context.Database.Migrate();
-            return _context;
+
+            var context = new P3Referential(builder.Options);
+            if (context != null)
+            {
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+            }
+            return context;
         }
 
-        [Fact]
-        public void Test_Return_All_Products()
+        protected virtual void Dispose(bool disposing)
         {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                }
 
-            var _context = SetupDatabase();
+                disposedValue = true;
+            }
+        }
 
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
+    }
+
+
+public class ProductsIntegrationsTests
+    {
+        
+        //public P3Referential SetupDatabase()
+        //{
+        //    //Act
+        //    var options = new DbContextOptionsBuilder<P3Referential>()
+        //    .UseInMemoryDatabase(databaseName: "P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a")
+        //    .Options;           
+            
+        //    var context = new P3Referential(options);
+        //    return context;
+        //}
+
+        [Fact]
+        public void Test_Return_All_Products_In_Memory_Database()
+        {
+            var factory = new ConnectionFactory();
+            using (var context = factory.CreateContextForInMemory())
+            {
+                var product = new Product
+                {
+                    Name = "Playstation 4",
+                    Description = "Playstation 4 has a great catalog of games",
+                    Details = "Playstation 4 has could be played online",
+                    Price = 499.0,
+                    Quantity = 10
+                };
+
+                var product2 = new Product
+                {
+                    Name = "Nintendo Switch",
+                    Description = "Nintendo Switch has a great catalog of games",
+                    Details = "Nintendo Switch has could be played online",
+                    Price = 399.0,
+                    Quantity = 100
+                };
+
+                var productService = new ProductRepository(context);
+                productService.SaveProduct(product);
+                productService.SaveProduct(product2);
+                var results = productService.GetAllProducts();
+                Assert.NotEmpty(results.ToList());
+            }           
+            //Assert
+            
+
+            //var _context = SetupDatabase();
+           
             //var _context = new P3Referential(builder.Options);
             //Arrange
-            var productService = new ProductRepository(_context);
-            var results = productService.GetAllProducts();
+            //var productService = new ProductRepository(_context);
+            //var results = productService.GetAllProducts();
             //Assert
-            Assert.NotEmpty(results.ToList());
+            //Assert.NotEmpty(results.ToList());
         }
 
         [Fact]
-        public void Test_Add_Products_In_Database()
+        public void Test_Add_Products_In_Persistent_Database()
         {
-            var _context = SetupDatabase();
-             var product = new Product 
+            var factory = new ConnectionFactory();
+            var context = factory.CreateContextSQLServer();
+
+            var product = new Product 
              { 
                  Name = "Playstation 4",
                  Description = "Playstation 4 has a great catalog of games",
@@ -62,16 +145,17 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
                  Price = 499.0,
                  Quantity = 10
              };
-            var productService = new ProductRepository(_context);
+            var productService = new ProductRepository(context);
             productService.SaveProduct(product);            
         }
 
         [Fact]
-        public void Test_Delete_Products_In_Database()
+        public void Test_Delete_Products_In_Persistent_Database()
         {
             //Arrange
-            var _context = SetupDatabase();
-            var productService = new ProductRepository(_context);
+            var factory = new ConnectionFactory();
+            var context = factory.CreateContextSQLServer();
+            var productService = new ProductRepository(context);
             var Products = productService.GetAllProducts().ToList();
             
             foreach (var item in Products)
@@ -86,12 +170,21 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         [Fact]
         public void Test_Product_Controller()
         {
-
+            //test product controller
         }
 
-        public void CleanupDatabase()
-        {
-            //clean all data 
-        }
+        // test authentication user 
+
+        //test authentication admin
+       
     }    
 }
+
+//public void Dispose()
+//{
+//    if (null != this.CurrentDatabaseConnection)
+//    {
+//        this.CurrentDatabaseConnection.Dispose();
+//        this.CurrentDatabaseConnection = null;
+//    }
+//}

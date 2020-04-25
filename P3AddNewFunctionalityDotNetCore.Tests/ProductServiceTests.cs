@@ -9,6 +9,8 @@ using P3AddNewFunctionalityDotNetCore.Models;
 using Microsoft.Extensions.Localization;
 using P3AddNewFunctionalityDotNetCore.Models.Entities;
 using System.Collections.Generic;
+using P3AddNewFunctionalityDotNetCore.Controllers;
+using Microsoft.AspNetCore.Mvc;
 
 namespace P3AddNewFunctionalityDotNetCore.Tests
 {
@@ -238,6 +240,42 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
 
             //Assert
             Assert.Contains("The stock value must be a number greater than zero", result);
+        }
+
+        [Fact]
+        public void Test_Product_Controller()
+        {
+            //test product controller
+            Mock<IProductService> MockProductService = new Mock<IProductService>();
+            MockProductService.Setup(x => x.GetAllProductsViewModel()).Returns(() => new List<ProductViewModel>
+            {
+                new ProductViewModel
+                {
+                    Id = 1,
+                    Name = "ABC",
+                    Price = "10",
+                    Description = "ABC",
+                    Details = "test",
+                    Stock = "100"
+                },
+                new ProductViewModel
+                {
+                    Id = 2,
+                    Name = "DEF",
+                    Price = "100",
+                    Description = "DEF",
+                    Details = "test",
+                    Stock = "200"
+                }
+
+            });
+            
+            Mock<ILanguageService> MockLangageService = new Mock<ILanguageService>();
+            var productController = new ProductController(MockProductService.Object, MockLangageService.Object);
+            var result = productController.Index();
+            var viewResult = (ViewResult)result;
+            var results = (List<ProductViewModel>)viewResult.Model;
+            Assert.Equal(2, results.Count);
         }
     }
 }

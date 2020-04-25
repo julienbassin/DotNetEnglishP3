@@ -11,6 +11,11 @@ using System.Text;
 using Xunit;
 using System.Linq;
 using P3AddNewFunctionalityDotNetCore.Models.Entities;
+using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Net;
+using System.Security.Claims;
 
 namespace P3AddNewFunctionalityDotNetCore.Tests
 {
@@ -74,7 +79,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
     }
 
 
-public class ProductsIntegrationsTests
+    public class ProductsIntegrationsTests
     {
         
         //public P3Referential SetupDatabase()
@@ -146,7 +151,9 @@ public class ProductsIntegrationsTests
                  Quantity = 10
              };
             var productService = new ProductRepository(context);
-            productService.SaveProduct(product);            
+            productService.SaveProduct(product);
+            var results = productService.GetAllProducts();           
+            Assert.NotNull(results.FirstOrDefault(p=>p.Id == product.Id));
         }
 
         [Fact]
@@ -156,6 +163,15 @@ public class ProductsIntegrationsTests
             var factory = new ConnectionFactory();
             var context = factory.CreateContextSQLServer();
             var productService = new ProductRepository(context);
+            var product = new Product
+            {
+                Name = "Playstation 4",
+                Description = "Playstation 4 has a great catalog of games",
+                Details = "Playstation 4 has could be played online",
+                Price = 499.0,
+                Quantity = 10
+            };
+            productService.SaveProduct(product);
             var Products = productService.GetAllProducts().ToList();
             
             foreach (var item in Products)
@@ -167,24 +183,23 @@ public class ProductsIntegrationsTests
             Assert.Empty(Results);
         }
 
-        [Fact]
-        public void Test_Product_Controller()
+        public async Task Index_should_return_public_view_for_anonymous_user()
         {
-            //test product controller
+            // test authentication user
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] {
+                                        new Claim(ClaimTypes.NameIdentifier, "SomeValueHere"),
+                                        new Claim(ClaimTypes.Name, "julien.bassin@test.com")
+                                        // other required and custom claims
+                                   }, "TestAuthentication"));
+
         }
 
-        // test authentication user 
+        [Fact]
+        public void Index_should_return_private_view_for_authenticated_user()
+        {
+            //test authentication admin
+        }
 
-        //test authentication admin
-       
+
     }    
 }
-
-//public void Dispose()
-//{
-//    if (null != this.CurrentDatabaseConnection)
-//    {
-//        this.CurrentDatabaseConnection.Dispose();
-//        this.CurrentDatabaseConnection = null;
-//    }
-//}

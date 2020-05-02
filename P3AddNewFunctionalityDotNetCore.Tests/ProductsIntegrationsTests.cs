@@ -8,6 +8,14 @@ using System.Linq;
 using P3AddNewFunctionalityDotNetCore.Models.Entities;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using P3AddNewFunctionalityDotNetCore.Controllers;
+using Moq;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using P3AddNewFunctionalityDotNetCore.Models;
+using P3AddNewFunctionalityDotNetCore.Models.Services;
+using System.Collections.Generic;
+using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
 
 namespace P3AddNewFunctionalityDotNetCore.Tests
 {
@@ -76,6 +84,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         [Fact]
         public void Test_Return_All_Products_In_Memory_Database()
         {
+            // Act
             var factory = new ConnectionFactory();
             using (var context = factory.CreateContextForInMemory())
             {
@@ -97,10 +106,13 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
                     Quantity = 100
                 };
 
+                // Arrange
                 var productService = new ProductRepository(context);
                 productService.SaveProduct(product);
                 productService.SaveProduct(product2);
                 var results = productService.GetAllProducts();
+
+                // Assert
                 Assert.NotEmpty(results.ToList());
             }
         }
@@ -108,6 +120,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         [Fact]
         public void Test_Add_Products_In_Persistent_Database()
         {
+            // Act
             var factory = new ConnectionFactory();
             var context = factory.CreateContextSQLServer();
 
@@ -119,16 +132,20 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
                  Price = 499.0,
                  Quantity = 10
              };
+
+            // Arrange
             var productService = new ProductRepository(context);
             productService.SaveProduct(product);
-            var results = productService.GetAllProducts();           
+            var results = productService.GetAllProducts();
+
+            // Assert
             Assert.NotNull(results.FirstOrDefault(p=>p.Id == product.Id));
         }
 
         [Fact]
         public void Test_Delete_Products_In_Persistent_Database()
         {
-            //Arrange
+            // Act
             var factory = new ConnectionFactory();
             var context = factory.CreateContextSQLServer();
             var productService = new ProductRepository(context);
@@ -140,6 +157,8 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
                 Price = 499.0,
                 Quantity = 10
             };
+
+            // Arrange
             productService.SaveProduct(product);
             var Products = productService.GetAllProducts().ToList();
             
@@ -147,28 +166,27 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             {
                 productService.DeleteProduct(item.Id);
             }
+
             //Assert
             var Results = productService.GetAllProducts().ToList();
             Assert.Empty(Results);
         }
 
-        public async Task Index_should_return_public_view_for_anonymous_user()
-        {
-            // test authentication user
-            var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] {
-                                        new Claim(ClaimTypes.NameIdentifier, "SomeValueHere"),
-                                        new Claim(ClaimTypes.Name, "julien.bassin@test.com")
-                                        // other required and custom claims
-                                   }, "TestAuthentication"));
-
-        }
-
         [Fact]
-        public void Index_should_return_private_view_for_authenticated_user()
+        public void Index_Should_Return_Public_ProductController_View()
         {
-            //test authentication admin
+            // Act
+            Mock<IProductService> mockProductService = new Mock<IProductService>();
+            Mock<ILanguageService> mockLanguageService = new Mock<ILanguageService>();
+
+            // Arrange
+            var productController = new ProductController(mockProductService.Object, mockLanguageService.Object);
+            IActionResult ViewResult = productController.Index();
+
+            // Assert
+            Assert.IsType<ViewResult>(ViewResult);
+
         }
 
-
-    }    
+    }
 }

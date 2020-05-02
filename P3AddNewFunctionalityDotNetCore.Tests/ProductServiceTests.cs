@@ -276,6 +276,6 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var viewResult = (ViewResult)result;
             var results = (List<ProductViewModel>)viewResult.Model;
             Assert.Equal(2, results.Count);
-        }
+        }        
     }
 }
